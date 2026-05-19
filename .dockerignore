@@ -1,0 +1,28 @@
+.env
+.git
+.gitignore
+__pycache__
+.venv
+*.pyc
+*.pyo
+*.pyd
+.db
+build_log.txt
+plans/
+
+# Scripts
+deploy.sh
+create_sa.sh
+
+# Tests
+tests/
+pytest.ini
+.pytest_cache/
+
+# Documentation & CI
+.github/
+GEMINI.md
+TUTORIAL.md
+.flake8
+.gemini/
+*.skill

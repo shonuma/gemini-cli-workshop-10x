@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新しい予定を作成</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: auto; background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="date"], input[type="password"], textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .date-input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .date-input-group input {
+            flex-grow: 1;
+            margin-bottom: 0; /* Adjust margin for flex layout */
+        }
+        .date-input-group button {
+            background-color: #dc3545;
+            margin-left: 10px;
+            padding: 8px 12px;
+        }
+        .date-input-group button:hover {
+            background-color: #c82333;
+        }
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .flash-messages li {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>新しい予定を作成</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <ul class="flash-messages">
+                {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('create_event') }}" method="POST">
+            <label for="event-name">イベント名:</label>
+            <input type="text" id="event-name" name="event-name" required>
+
+            <label for="description">説明 (任意):</label>
+            <textarea id="description" name="description" rows="4"></textarea>
+
+            <label>開催日候補:</label>
+            <div id="candidate-dates-container">
+                <div class="date-input-group">
+                    <input type="date" name="candidate-dates" required>
+                    <button type="button" class="remove-date-btn" style="display:none;">削除</button>
+                </div>
+            </div>
+            <button type="button" id="add-date-btn">日付を追加</button>
+            <hr>
+
+            <label for="password">イベント削除用パスワード (数字4桁):</label>
+            <input type="password" id="password" name="password" pattern="[0-9]{4}" maxlength="4" inputmode="numeric" required>
+
+            <button type="submit">予定を作成する</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addDateBtn = document.getElementById('add-date-btn');
+            const candidateDatesContainer = document.getElementById('candidate-dates-container');
+
+            function updateRemoveButtons() {
+                const removeButtons = candidateDatesContainer.querySelectorAll('.remove-date-btn');
+                if (removeButtons.length > 1) {
+                    removeButtons.forEach(btn => btn.style.display = 'inline-block');
+                } else {
+                    removeButtons.forEach(btn => btn.style.display = 'none');
+                }
+            }
+
+            addDateBtn.addEventListener('click', () => {
+                const newDateGroup = document.createElement('div');
+                newDateGroup.classList.add('date-input-group');
+                newDateGroup.innerHTML = `
+                    <input type="date" name="candidate-dates" required>
+                    <button type="button" class="remove-date-btn">削除</button>
+                `;
+                candidateDatesContainer.appendChild(newDateGroup);
+                updateRemoveButtons();
+            });
+
+            candidateDatesContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-date-btn')) {
+                    e.target.closest('.date-input-group').remove();
+                    updateRemoveButtons();
+                }
+            });
+
+            // 初期ロード時に削除ボタンの状態を更新
+            updateRemoveButtons();
+        });
+    </script>
+</body>
+</html>

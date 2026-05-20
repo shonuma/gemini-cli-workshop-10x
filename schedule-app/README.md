@@ -22,7 +22,7 @@
 リポジトリをクローンし、プロジェクトディレクトリに移動します。
 ```bash
 cd ~/ && git clone https://github.com/shonuma/gemini-cli-workshop-10x.git
-cd ~/gemini-cli-workshop-10x
+cd ~/gemini-cli-workshop-10x/schedule-app
 # スクリプトに実行権限を付与
 chmod +x *.sh
 ```
@@ -99,7 +99,7 @@ gcloud firestore databases list
 
 ```bash
 # ディレクトリの移動
-cd ~/gemini-cli-workshop-10x
+cd ~/gemini-cli-workshop-10x/schedule-app
 
 # 仮想環境の有効化
 source .venv/bin/activate

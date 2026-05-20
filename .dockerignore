@@ -22,7 +22,9 @@ pytest.ini
 # Documentation & CI
 .github/
 GEMINI.md
+AGENTS.md
 TUTORIAL.md
 .flake8
 .gemini/
+.agents/
 *.skill

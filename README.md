@@ -69,7 +69,7 @@ uv pip install -r requirements.txt
 ```
 スクリプトの実行中に以下の情報を入力してください：
 - `Project ID`: Google Cloud のプロジェクトID
-- `Region`: リージョン (例: `asia-northeast1`)
+- `Region`: リージョン (例: `us-central1`)
 - `Service Name`: Cloud Run サービスの名称 (例: `scheduler-app`)
 - `Service Account Name`: サービスアカウントの名称 (例: `scheduler-sa`)
 
@@ -182,7 +182,7 @@ gcloud iam service-accounts describe ${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.g
 デプロイが完了すると以下のようなログが表示され、Cloud RunのサービスURLが表示されます。
 ```
 Service [scheduler-app] revision [*****] has been deployed and is serving 100 percent of traffic.
-Service URL: https://*****.asia-northeast1.run.app
+Service URL: https://*****.us-central1.run.app
 Deployment complete.
 ```
 

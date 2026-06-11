@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>イベント一覧 - 予定調整ツール</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/2.0.0/modern-normalize.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #4a90e2;
+            --color-primary-dark: #357ABD;
+            --color-secondary: #f5a623;
+            --color-background: #f8f9fa;
+            --color-text: #333;
+            --color-text-light: #888;
+            --color-border: #dee2e6;
+            --font-family: 'Noto Sans JP', sans-serif;
+        }
+        body {
+            font-family: var(--font-family);
+            background-color: var(--color-background);
+            color: var(--color-text);
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: var(--color-primary);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+        th, td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+        th {
+            background-color: #f1f3f5;
+            font-weight: 500;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        a {
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            text-decoration: underline;
+            color: var(--color-primary-dark);
+        }
+        .description {
+            font-size: 0.9rem;
+            color: #666;
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>イベント一覧</h1>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>イベント名</th>
+                        <th>概要</th>
+                        <th>作成日</th>
+                        <th>回答者数</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <td><a href="{{ url_for('event_detail', event_id=event.id) }}">{{ event.name }}</a></td>
+                        <td class="description">{{ event.description or '-' }}</td>
+                        <td>{{ event.created_at.strftime('%Y-%m-%d %H:%M') if event.created_at else '-' }}</td>
+                        <td>{{ event.responses_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <a href="{{ url_for('index') }}" class="back-link">&larr; トップに戻る</a>
+    </div>
+</body>
+</html>

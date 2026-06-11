@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>イベント: {{ event.name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: auto; background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; text-align: center; }
+        .event-details, .response-section, .add-response-section, .delete-event-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        .event-details p strong { margin-right: 5px; }
+        .response-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .response-table th, .response-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        .response-table th { background-color: #e9e9e9; }
+        .response-table td.highlight { background-color: #d4edda; }
+        .name-link {
+            color: #007bff;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .name-link:hover {
+            color: #0056b3;
+        }
+        .share-link {
+            cursor: pointer;
+            text-decoration: none;
+            color: #333;
+            font-size: 1.2em;
+            margin-left: 5px;
+        }
+        .share-link:hover {
+            color: #007bff;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        button.delete-button {
+            background-color: #dc3545;
+            margin-left: 10px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.delete-button:hover { background-color: #c82333; }
+        .hidden { display: none; }
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .flash-messages li {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .flash-messages li.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>イベント: {{ event.name }}</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <ul class="flash-messages">
+                {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        {% endwith %}
+
+        <div class="event-details">
+            <h2>イベント詳細</h2>
+            <p><strong>説明:</strong> {{ event.description if event.description else 'なし' }}</p>
+            <p>
+                <strong>URL:</strong> 
+                <span id="event-url">{{ request.url }}</span> 
+                <a href="#" class="share-link" id="copy-url-btn" title="URLをコピー">🔗</a>
+            </p>
+        </div>
+
+        <div class="response-section">
+            <h2>みんなの回答 ({{ responses | length }}人)</h2>
+            {% if responses %}
+            <table class="response-table">
+                <thead>
+                    <tr>
+                        <th>名前</th>
+                        {% for date in candidate_dates %}
+                        <th>{{ date }}</th>
+                        {% endfor %}
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for response in responses %}
+                    <tr>
+                        <td><span class="name-link" data-response-id="{{ response.id }}" data-response-name="{{ response.name }}" data-response-availability="{{ response.availability | tojson | forceescape }}">{{ response.name }}</span></td>
+                        {% for date in candidate_dates %}
+                        <td class="{% if date in best_dates %}highlight{% endif %}">{{ response.availability.get(date, '-') }}</td>
+                        {% endfor %}
+                        <td><button class="delete-response-btn" data-response-id="{{ response.id }}">削除</button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>まだ誰も回答していません。</p>
+            {% endif %}
+        </div>
+
+        <div class="add-response-section">
+            <h2>回答する</h2>
+            <button type="button" id="toggle-add-response-form">回答を入力する</button>
+            <form id="add-response-form" class="hidden">
+                <input type="hidden" id="edit-response-id" value="">
+                <label for="respondent-name">あなたの名前:</label>
+                <input type="text" id="respondent-name" required>
+                
+                {% for date in candidate_dates %}
+                <label>{{ date }}:</label>
+                <select class="availability-select" data-date="{{ date }}">
+                    <option value="-" selected>-</option>
+                    <option value="○">○</option>
+                    <option value="△">△</option>
+                    <option value="×">×</option>
+                </select>
+                {% endfor %}
+                <button type="submit" id="submit-response-btn">回答を送信</button>
+                <button type="button" id="cancel-edit-btn" class="hidden">キャンセル</button>
+            </form>
+        </div>
+
+        <div class="delete-event-section">
+            <h2>イベントを削除</h2>
+            <button type="button" id="toggle-delete-event-form" class="delete-button">このイベントを削除する</button>
+            <form id="delete-event-form" action="{{ url_for('delete_event', event_id=event_id) }}" method="POST" class="hidden">
+                <label for="delete-password">イベント削除用パスワード (数字4桁):</label>
+                <input type="password" id="delete-password" name="password" pattern="[0-9]{4}" maxlength="4" inputmode="numeric" required>
+                <button type="submit" class="delete-button">削除を実行</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const eventId = "{{ event_id }}";
+            const toggleAddResponseFormBtn = document.getElementById('toggle-add-response-form');
+            const addResponseForm = document.getElementById('add-response-form');
+            const editResponseIdInput = document.getElementById('edit-response-id');
+            const respondentNameInput = document.getElementById('respondent-name');
+            const availabilitySelects = document.querySelectorAll('.availability-select');
+            const submitResponseBtn = document.getElementById('submit-response-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const responseTable = document.querySelector('.response-table');
+            const copyUrlBtn = document.getElementById('copy-url-btn');
+            const toggleDeleteEventFormBtn = document.getElementById('toggle-delete-event-form');
+            const deleteEventForm = document.getElementById('delete-event-form');
+
+            // URLコピー機能
+            if (copyUrlBtn) {
+                copyUrlBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    try {
+                        await navigator.clipboard.writeText(window.location.href);
+                        alert('URLがクリップボードにコピーされました！');
+                    } catch (err) {
+                        console.error('URLのコピーに失敗しました:', err);
+                        alert('URLのコピーに失敗しました。手動でコピーしてください。');
+                    }
+                });
+            }
+
+            // 回答フォームのリセット
+            function resetResponseForm() {
+                if (editResponseIdInput) editResponseIdInput.value = '';
+                if (respondentNameInput) respondentNameInput.value = '';
+                if (availabilitySelects) availabilitySelects.forEach(select => select.value = '-');
+                if (submitResponseBtn) submitResponseBtn.textContent = '回答を送信';
+                if (cancelEditBtn) cancelEditBtn.classList.add('hidden');
+                if (addResponseForm) addResponseForm.classList.add('hidden');
+                if (toggleAddResponseFormBtn) toggleAddResponseFormBtn.textContent = '回答を入力する';
+            }
+
+            // 回答フォームの表示/非表示トグル
+            if (toggleAddResponseFormBtn && addResponseForm) {
+                toggleAddResponseFormBtn.addEventListener('click', () => {
+                    const isHidden = addResponseForm.classList.contains('hidden');
+                    if (isHidden) {
+                        addResponseForm.classList.remove('hidden');
+                        toggleAddResponseFormBtn.textContent = '閉じる';
+                    } else {
+                        resetResponseForm();
+                    }
+                });
+            }
+
+            // キャンセルボタン
+            if (cancelEditBtn) {
+                cancelEditBtn.addEventListener('click', () => {
+                    resetResponseForm();
+                });
+            }
+
+            // 回答の新規送信/更新
+            if (addResponseForm) {
+                addResponseForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const name = respondentNameInput.value;
+                    const responseId = editResponseIdInput.value;
+                    const availability = {};
+                    availabilitySelects.forEach(select => {
+                        availability[select.dataset.date] = select.value;
+                    });
+
+                    if (!name) {
+                        alert('名前を入力してください。');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/event/${eventId}/respond`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ name, availability, response_id: responseId })
+                        });
+                        const data = await response.json();
+                        if (data.status === 'success') {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert('エラー: ' + data.message);
+                        }
+                    } catch (error) {
+                        console.error('回答送信/更新エラー:', error);
+                        alert('回答の送信/更新中にエラーが発生しました。');
+                    }
+                });
+            }
+
+            // 回答の編集・削除
+            if (responseTable) {
+                responseTable.addEventListener('click', async (e) => {
+                    const nameLink = e.target.closest('.name-link');
+                    const deleteBtn = e.target.closest('.delete-response-btn');
+
+                    if (nameLink) {
+                        const responseId = nameLink.dataset.responseId;
+                        const responseName = nameLink.dataset.responseName;
+                        const responseAvailabilityStr = nameLink.dataset.responseAvailability;
+                        console.log('Parsing availability for:', responseName, 'ID:', responseId, 'Raw JSON:', responseAvailabilityStr);
+
+                        let responseAvailability;
+                        try {
+                            responseAvailability = JSON.parse(responseAvailabilityStr);
+                        } catch (err) {
+                            console.error('Failed to parse response availability:', err);
+                            return;
+                        }
+
+                        editResponseIdInput.value = responseId;
+                        respondentNameInput.value = responseName;
+                        availabilitySelects.forEach(select => {
+                            select.value = responseAvailability[select.dataset.date] || '-';
+                        });
+
+                        addResponseForm.classList.remove('hidden');
+                        submitResponseBtn.textContent = '回答を更新';
+                        cancelEditBtn.classList.remove('hidden');
+                        toggleAddResponseFormBtn.textContent = '編集を終了';
+                        respondentNameInput.focus();
+                    } else if (deleteBtn) {
+                        const responseId = deleteBtn.dataset.responseId;
+                        if (confirm('この回答を削除しますか？')) {
+                            try {
+                                const response = await fetch(`/event/${eventId}/delete/${responseId}`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                const data = await response.json();
+                                if (data.status === 'success') {
+                                    alert(data.message);
+                                    window.location.reload();
+                                } else {
+                                    alert('エラー: ' + data.message);
+                                }
+                            } catch (error) {
+                                console.error('回答削除エラー:', error);
+                                alert('回答の削除中にエラーが発生しました。');
+                            }
+                        }
+                    }
+                });
+            }
+
+            // イベント削除フォームの表示/非表示トグル
+            if (toggleDeleteEventFormBtn && deleteEventForm) {
+                toggleDeleteEventFormBtn.addEventListener('click', () => {
+                    deleteEventForm.classList.toggle('hidden');
+                    toggleDeleteEventFormBtn.textContent = deleteEventForm.classList.contains('hidden') 
+                        ? 'このイベントを削除する' 
+                        : '削除をキャンセル';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
